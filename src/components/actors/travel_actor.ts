@@ -2,21 +2,29 @@ import { BaseActor } from './base_actor';
 import { Task } from '../progress_manager';
 import { AIMessage, BasicAIClient } from '../../core/ai_sdk';
 import { Tool } from '../tools/base_tool'; // 引入 Tool 接口
+import { ToolExecutor } from '../tools/tool_executor'; // 引入新的执行器接口
 
 /**
  * 旅行专家 ✈️ (工具增强版)
  * 一个配备了工具箱，并能通过 ReAct 模式执行复杂任务的专家。
  */
 export class TravelActor extends BaseActor {
-  private tools: Tool[]; // 专家拥有的工具箱
+  private toolExecutor: ToolExecutor; // 一个执行器
+  private toolDescriptions: string;   // 缓存工具描述
 
   /**
    * @description 构造函数，为专家配备工具
+   * @param persona - 专家的个性
+   * @param aiClient - 智能体
+   * @param toolExecutor - 工具执行器,本地工具或者是mcp工具
+   * @param allTools - 所有工具
    */
-  constructor(persona: string, aiClient: BasicAIClient, tools: Tool[] = []) {
+  constructor(persona: string, aiClient: BasicAIClient, toolExecutor: ToolExecutor, allTools: Tool[]) {
     super(persona, aiClient); // 调用父类的构造函数
-    this.tools = tools;
-    console.log(`[TravelActor] 专家已配备 ${this.tools.map(tool => tool.name).join(', ')} 工具。`);
+    this.toolExecutor = toolExecutor;
+    this.toolExecutor.initializeTools(allTools); // 初始化执行器
+    this.toolDescriptions = allTools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n');
+    console.log(`[TravelActor] 专家已就位，当前工具执行策略: ${toolExecutor.constructor.name}`);
   }
 
   /**
@@ -51,8 +59,8 @@ export class TravelActor extends BaseActor {
         console.log(`[TravelActor] AI 决策: 使用工具 [${toolName}]，输入为: "${toolInput}"`);
 
         // 3. 观察 (Observe) - 执行工具并获取结果
-        const toolResult = await this.executeTool(toolName, toolInput);
-        console.log(`[TravelActor] 工具 [${toolName}] 返回结果: "${toolResult}"`);
+        // 专家不再自己执行，而是命令“执行器”去执行
+        const toolResult = await this.toolExecutor.execute(toolName, toolInput);
 
         // 将本次的工具使用和结果存入历史记录，用于下一次思考
         history.push({ role: 'assistant', content: JSON.stringify(thoughtProcess) });
@@ -74,16 +82,16 @@ export class TravelActor extends BaseActor {
    * @returns {Promise<any>} - AI 返回的结构化决策（JSON格式）
    */
   private async think(task: Task, context: string, history: AIMessage[]): Promise<any> {
-    const toolDescriptions = this.tools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n');
+    const toolDescriptions = this.toolDescriptions;
 
     const responseSchema = {
       type: 'object',
       properties: {
         thought: { type: 'string', description: "我的思考过程：分析当前情况，决定下一步行动。" },
         action: { type: 'string', enum: ['tool_call', 'final_answer'], description: "下一步的行动类型。" },
-        tool_name: { type: 'string', description: "如果行动是 tool_call，这里是工具的名称。" },
-        tool_input: { type: 'string', description: "如果行动是 tool_call，这里是给工具的输入。" },
-        final_answer: { type: 'string', description: "如果行动是 final_answer，这里是给用户的最终答案。" }
+        tool_name: { type: 'string', description: "如果行动是 tool_call，这里是工具的名称。写了tool_name后，记得在tool_input中填写工具的输入。" },
+        tool_input: { type: 'string', description: "如果行动是 tool_call，这里是给工具的输入。写了tool_input后，记得在tool_name中填写工具的名称。" },
+        final_answer: { type: 'string', description: "如果行动是 final_answer，这里一定要写，这里是给用户的最终答案。" }
       },
       required: ['thought', 'action']
     };
@@ -96,7 +104,7 @@ export class TravelActor extends BaseActor {
         历史记录:
         ${history.map(m => `${m.role}: ${m.content}`).join('\n')}
         ---
-        ${history.length !== 0 && "如果在历史记录中工具提供的信息还是不明确，不足以完成当前任务，请继续使用工具来获取更多信息，假如要使用工具，必须在tool_name中填写工具名称，必须在tool_input中填写工具的输入，还是“提供最终答案(final_answer)”，假如是final_answer，请在final_answer中填写最终答案。"}
+        ${history.length !== 0 && "如果在历史记录中工具提供的信息还是不明确，不足以完成当前任务，请继续使用工具来获取更多信息，假如要使用工具，必须在tool_name中填写工具名称，必须在tool_input中填写工具的输入，还是“提供最终答案(final_answer)”，假如是final_answer，一定在final_answer中填写最终答案，而不是别的名字的字段。"}
         ---
         当前任务: ${task.description}
       `}
@@ -108,23 +116,5 @@ export class TravelActor extends BaseActor {
     console.log("[TravelActor] 请求 Kimi AI 给出执行方案...,返回信息", result);
 
     return result;
-  }
-
-  /**
-   * @description 执行工具
-   * @param toolName - 要执行的工具名称
-   * @param toolInput - 工具的输入
-   * @returns {Promise<string>} - 工具执行的结果
-   */
-  private async executeTool(toolName: string, toolInput: any): Promise<string> {
-    const tool = this.tools.find(t => t.name === toolName);
-    if (!tool) {
-      return `错误：找不到名为 "${toolName}" 的工具。`;
-    }
-    try {
-      return await tool.execute(toolInput);
-    } catch (error) {
-      return `错误：执行工具 "${toolName}" 时失败: ${error}`;
-    }
   }
 }

@@ -7,7 +7,7 @@ async function testFullFlow() {
   console.log("--- 开始端到端测试 AimeFramework ---");
 
   const framework = new AimeFramework();
-  const userGoal = "我家在清远，策划一次在清远的一天游";
+  const userGoal = "我现在就在杭州，请规划一下我的游玩，玩4天，从周四到周一";
 
   try {
     await framework.run(userGoal);

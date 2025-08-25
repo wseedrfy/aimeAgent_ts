@@ -1,9 +1,11 @@
 // 导入我们新的 TravelActor
-import { TravelActor } from './actors/travel_actor';
-import { Task } from './progress_manager';
-import { BaseActor, Actor } from './actors/base_actor';
-import { BasicAIClient, createDefaulAIClient, AIMessage } from '../core/ai_sdk';
-import { UserInputTool } from './tools/user_input_tool';
+import { TravelActor } from "./actors/travel_actor";
+import { Task } from "./progress_manager";
+import { BaseActor, Actor } from "./actors/base_actor";
+import { BasicAIClient, createDefaulAIClient, AIMessage } from "../core/ai_sdk";
+import { UserInputTool } from "./tools/user_input_tool";
+import { MemoryModule } from "./memory_module";
+import { ToolExecutor } from "./tools/tool_executor";
 
 /**
  * 演员工厂 🏭 (升级版)
@@ -11,12 +13,15 @@ import { UserInputTool } from './tools/user_input_tool';
  */
 export class ActorFactory {
   private aiClient: BasicAIClient;
-
+  private memory: MemoryModule;
+  private toolExecutor: ToolExecutor; // 新增一个属性来保存执行器
   /**
    * @description 构造函数，初始化工厂
    */
-  constructor() {
+  constructor(memory: MemoryModule, toolExecutor: ToolExecutor) {
     this.aiClient = createDefaulAIClient();
+    this.memory = memory;
+    this.toolExecutor = toolExecutor; // 保存执行器
     console.log("[ActorFactory] 人才市场已开张 (工厂已初始化)。");
   }
 
@@ -26,26 +31,45 @@ export class ActorFactory {
    * @returns {Promise<Actor>} - 返回一个创建好的、拥有定制人设的 Actor 实例
    */
   public async createActor(task: Task): Promise<Actor> {
-    console.log(`[ActorFactory] 收到新任务 "${task.description}"，正在寻找合适的专家...`);
+    console.log(
+      `[ActorFactory] 收到新任务 "${task.description}"，正在寻找合适的专家...`
+    );
 
     const persona = await this.generatePersona(task);
 
     // **新增逻辑：根据任务描述决定创建哪种类型的专家**
     const taskDescription = task.description.toLowerCase();
-    const travelKeywords = ['旅行', '机票', '酒店', '航班', '行程', '旅游', "规划", "交通", "游玩", "出行"];
+    const travelKeywords = [
+      "旅行",
+      "机票",
+      "酒店",
+      "航班",
+      "行程",
+      "旅游",
+      "规划",
+      "交通",
+      "游玩",
+      "出行",
+    ];
 
     // 优化点：让ai来看看应该创建已有的哪些专家
 
-    if (travelKeywords.some(keyword => taskDescription.includes(keyword))) {
-      console.log("[ActorFactory] 任务与旅行相关，正在创建 [TravelActor] 专家...");
+    if (travelKeywords.some((keyword) => taskDescription.includes(keyword))) {
+      console.log(
+        "[ActorFactory] 任务与旅行相关，正在创建 [TravelActor] 专家..."
+      );
       const userInputTool = new UserInputTool();
-      return new TravelActor(persona, this.aiClient, [userInputTool]);
+      return new TravelActor(persona, this.aiClient, this.toolExecutor, [
+        userInputTool,
+      ]);
     } else {
-      console.log("[ActorFactory] 未匹配到特定领域，正在创建通用 [BaseActor] 专家...");
+      console.log(
+        "[ActorFactory] 未匹配到特定领域，正在创建通用 [BaseActor] 专家..."
+      );
       return new BaseActor(persona, this.aiClient);
     }
   }
-  
+
   /**
    * @description (这是一个新的辅助函数) 调用 AI 为任务生成人设
    * @param task - 需要生成人设的任务
@@ -53,13 +77,26 @@ export class ActorFactory {
    */
   private async generatePersona(task: Task): Promise<string> {
     const responseSchema = {
-      type: 'object',
-      properties: { persona: { type: 'string', description: "为这个任务描述一个最合适的专家角色或人设，请使用第一人称'你是一个...'" }},
-      required: ['persona']
+      type: "object",
+      properties: {
+        persona: {
+          type: "string",
+          description:
+            "为这个任务描述一个最合适的专家角色或人设，请使用第一人称'你是一个...'",
+        },
+      },
+      required: ["persona"],
     };
     const messages: AIMessage[] = [
-      { role: 'system', content: '你是一个顶级的人力资源（HR）总监，特别擅长为复杂的任务找到最合适的虚拟专家角色。你的任务是根据给定的任务描述，设计一个精确的专家“人设”(Persona)。' },
-      { role: 'user', content: `请为以下任务设计一个专家人设: "${task.description}"` }
+      {
+        role: "system",
+        content:
+          "你是一个顶级的人力资源（HR）总监，特别擅长为复杂的任务找到最合适的虚拟专家角色。你的任务是根据给定的任务描述，设计一个精确的专家“人设”(Persona)。",
+      },
+      {
+        role: "user",
+        content: `请为以下任务设计一个专家人设: "${task.description}"`,
+      },
     ];
     try {
       const aiResponse = await this.aiClient.chatJSON(messages, responseSchema);

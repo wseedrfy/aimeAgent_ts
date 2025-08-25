@@ -3,15 +3,18 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "chat:mcp": "node --loader ts-node/esm src/core/mcp_sdk.test.ts"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "@anthropic-ai/sdk": "^0.57.0",
+    "@modelcontextprotocol/sdk": "^1.17.3",
     "agent-squad": "^1.0.1",
     "dotenv": "^17.2.1",
-    "openai": "^5.12.2"
+    "openai": "^5.12.2",
+    "zod": "^3.23.8"
   },
   "devDependencies": {
     "@types/node": "^24.3.0",

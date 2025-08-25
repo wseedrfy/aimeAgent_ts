@@ -4,6 +4,7 @@ import { Task } from '../progress_manager';
 import { UserInputTool } from '../tools/user_input_tool';
 import { WebSearchTool } from '../tools/web_search_tool'; // 引入新工具
 
+import { LocalToolExecutor } from '../tools/local_tool_executor';
 /**
  * @description 测试 TravelActor 在拥有多个工具时，是否能做出正确的决策
  */
@@ -27,8 +28,9 @@ async function testMultiToolActor() {
 
   // 3. 创建 TravelActor 实例，并把**所有**工具都“装”给它
   const persona = "你是一名知识渊博且善于沟通的东京旅行向导。";
+  const toolExecutor = new LocalToolExecutor();
   // **注意**：工具箱里现在有两个工具了！
-  const travelExpert = new TravelActor(persona, aiClient, [userInputTool, webSearchTool]);
+  const travelExpert = new TravelActor(persona, aiClient, toolExecutor, [userInputTool, webSearchTool]);
 
   try {
     const result = await travelExpert.run(sampleTask, context);

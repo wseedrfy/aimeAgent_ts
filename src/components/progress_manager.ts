@@ -10,6 +10,7 @@ export interface Task {
  * 进度管理模块 📋 (中央白板)
  */
 export class ProgressManager {
+    
     private tasks: Task[] = [];
     private nextId = 1;
 
@@ -190,7 +191,7 @@ export class ProgressManager {
     /**
      * @description (新的辅助函数) 查找一个任务的父任务
      */
-    private findParentOf(childTask: Task, tasks: Task[]): Task | null {
+    public findParentOf(childTask: Task, tasks: Task[]): Task | null {
         for (const task of tasks) {
             if (task.subtasks.some(st => st.id === childTask.id)) {
                 return task;
@@ -226,5 +227,9 @@ export class ProgressManager {
         }
         printTasks(this.tasks);
         console.log("---------------------------\n");
+    }
+
+    public getTasks(): Task[] {
+        return this.tasks;
     }
 }

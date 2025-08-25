@@ -1,5 +1,7 @@
 import { ActorFactory } from './actor_factory';
+import { MemoryModule } from './memory_module';
 import { Task } from './progress_manager';
+import { LocalToolExecutor } from './tools/local_tool_executor';
 
 /**
  * @description 测试 ActorFactory 的创建流程
@@ -8,7 +10,7 @@ async function testActorFactory() {
   console.log("--- 开始测试 ActorFactory ---");
 
   // 1. 创建一个 ActorFactory 的实例
-  const factory = new ActorFactory();
+  const factory = new ActorFactory(new MemoryModule(), new LocalToolExecutor());
 
   // 2. 模拟一个从“白板”上取下来的任务
   const sampleTask: Task = {
