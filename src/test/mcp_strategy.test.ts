@@ -1,5 +1,5 @@
-import { AimeFramework } from './aime_framework';
-import { MCPServerConfig } from './components/tools/mcp_client';
+import { AimeFramework } from '../aime_framework';
+import { MultiMCPServerConfig } from '../components/tools/multi_mcp_manager';
 
 /**
  * @description 测试 AimeFramework 的 MCP 策略执行流程
@@ -8,13 +8,15 @@ async function testMCPStrategy() {
   console.log("--- 开始测试 AimeFramework 的 MCP 策略 ---");
 
   // 1. 定义我们自己的工具服务器的启动配置
-  const myToolServerConfig: MCPServerConfig = {
-    command: "npx",
-    args: ["tsx", "src/mcp/test_server.ts"]
+  const myToolServerConfig: MultiMCPServerConfig = {
+    "test_server": {
+      command: "npx",
+      args: ["tsx", "src/mcp/test_server.ts"]
+    }
   };
 
   // 2. 创建 AimeFramework 实例，明确指定使用 'mcp' 策略，并传入配置
-  const framework = new AimeFramework('mcp', myToolServerConfig);
+  const framework = new AimeFramework({ strategy: 'mcp', mcpConfig: myToolServerConfig });
 
   const userGoal = "为我的北海道滑雪之旅，获取一个合适的预算建议。";
 

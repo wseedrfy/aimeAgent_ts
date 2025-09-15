@@ -1,5 +1,5 @@
-import { MCPClient } from './components/tools/mcp_client';
-import type { MCPServerConfig } from './components/tools/mcp_client';
+import { MCPClient } from '../components/tools/mcp_client';
+import type { MCPServerConfig } from '../components/tools/mcp_client';
 
 async function main() {
 

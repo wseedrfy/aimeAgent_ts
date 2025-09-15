@@ -114,4 +114,11 @@ export class MCPClient {
     this.connected = false; // **修改点**：关闭连接后，更新状态
     console.error("[MCPClient] 已与工具服务器断开连接。");
   }
+
+  /**
+ * @description 获取此客户端连接的服务器上所有可用的工具名称
+ */
+  public async getAvailableTools(): Promise<string[]> {
+    return this.availableTools;
+  }
 }

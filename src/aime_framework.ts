@@ -7,6 +7,13 @@ import { LocalToolExecutor } from "./components/tools/local_tool_executor";
 import { MCPToolExecutor } from "./components/tools/mcp_tool_executor";
 import { MemoryModule } from "./components/memory_module";
 import { MCPServerConfig } from "./components/tools/mcp_client";
+import { MultiMCPManager, MultiMCPServerConfig } from "./components/tools/multi_mcp_manager";
+
+// 新增一个配置类型
+export interface AimeFrameworkConfig {
+    strategy: ToolExecutionStrategy;
+    mcpConfig?: MultiMCPServerConfig; // 如果是 mcp 策略，则需要这个配置
+}
 
 // 定义一个类型，用于选择策略
 export type ToolExecutionStrategy = "local" | "mcp";
@@ -22,24 +29,24 @@ export class AimeFramework {
     private maxTurns: number = 51;
     private memory: MemoryModule;
     private toolExecutor: ToolExecutor;
+    private multiMCPManager?: MultiMCPManager; // MCP 管理器是可选的
     /**
      * @description 构造函数，初始化所有核心组件
      */
-    constructor(
-        strategy: ToolExecutionStrategy = "local",
-        mcpConfig?: MCPServerConfig
-    ) {
+    constructor(private config: AimeFrameworkConfig) {
         this.progressManager = new ProgressManager();
         this.planner = new DynamicPlanner(this.progressManager);
         // this.actorFactory = new ActorFactory();
         this.aiClient = createDefaulAIClient();
         this.memory = new MemoryModule();
-        if (strategy === "mcp") {
+        if (this.config.strategy === "mcp") {
             // 使用 MCP 执行器
-            if (!mcpConfig) {
+            if (!this.config.mcpConfig) {
                 throw new Error("错误：选择 'mcp' 策略时，必须提供 mcpConfig。");
             }
-            this.toolExecutor = new MCPToolExecutor(mcpConfig);
+            // 如果是 MCP 策略，则创建并初始化“舰队指挥官”
+            this.multiMCPManager = new MultiMCPManager();
+            this.toolExecutor = new MCPToolExecutor(this.multiMCPManager);
         } else {
             // 默认使用本地执行器
             this.toolExecutor = new LocalToolExecutor();
@@ -57,6 +64,13 @@ export class AimeFramework {
     public async run(goal: string): Promise<void> {
         // ... 这部分代码和上一版完全相同，无需改动 ...
         console.log(`[AimeFramework] 接收到新目标: "${goal}"，开始运行...`);
+
+        // 如果是 MCP 策略，在运行开始时，启动所有服务器
+        if (this.config.strategy === 'mcp' && this.multiMCPManager && this.config.mcpConfig) {
+            await this.multiMCPManager.initialize(this.config.mcpConfig);
+        }
+
+        // run 方法的主循环逻辑
         this.progressManager.initializePlan(goal);
 
         let turn = 0;
@@ -144,6 +158,11 @@ export class AimeFramework {
                 }
 
             }
+        }
+
+        // 在运行结束后，关闭所有服务器连接
+        if (this.multiMCPManager) {
+            await this.multiMCPManager.closeAll();
         }
 
         if (turn >= this.maxTurns)

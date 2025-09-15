@@ -1,51 +1,48 @@
 import { Tool } from "./base_tool";
 import { ToolExecutor } from "./tool_executor";
-import { MCPClient } from "./mcp_client";
-import { MCPServerConfig } from "./mcp_client";
+import { MultiMCPManager } from "./multi_mcp_manager"; // 引入“舰队指挥官”
 
 /**
- * MCP 工具执行器 📡
- * 通过 MCP 客户端，调用一个远程工具服务器来执行工具的策略。
+ * MCP 工具执行器 📡 (指挥官版)
+ * 它不再自己管理连接，而是将所有请求委托给 MultiMCPManager。
  */
 export class MCPToolExecutor implements ToolExecutor {
-    private mcpClient: MCPClient;
-    private mcpServerConfig: MCPServerConfig;
+  private manager: MultiMCPManager; // **修改点**: 持有的是指挥官的引用
 
-    constructor(mcpServerConfig: MCPServerConfig) {
-        this.mcpClient = new MCPClient();
-        this.mcpServerConfig = mcpServerConfig;
-        console.log("[MCPToolExecutor] “MCP远程执行”策略已就绪。");
+  constructor(manager: MultiMCPManager) { // **修改点**: 构造函数接收指挥官实例
+    this.manager = manager;
+    console.log("[MCPToolExecutor] “MCP远程执行”策略已就绪，并听从“舰队指挥官”的调度。");
+  }
+
+  /**
+   * @description 这个策略下的工具是在远程服务器上动态发现的，所以此方法留空。
+   */
+  public initializeTools(tools: Tool[]): void {
+    //
+  }
+  
+  /**
+   * @description (已升级) 将工具执行请求直接转发给“舰队指挥官”
+   */
+  public async execute(toolName: string, toolInput: any): Promise<string> {
+    // MCP 的工具输入需要是键值对，我们在这里做一点自动包装
+    let formattedInput = toolInput;
+    // 这里好像是多此一举
+    if (typeof toolInput === 'string') {
+        // 这是一个简化版，未来可以做得更通用
+        if (toolName === 'askUser') formattedInput = { question: toolInput };
+        if (toolName === 'webSearch') formattedInput = { query: toolInput };
+        if (toolName === 'readFromMemory') formattedInput = { key: toolInput };
     }
+    
+    // 将请求委托给指挥官
+    return this.manager.callTool(toolName, formattedInput);
+  }
 
-    // 这个策略不需要 initializeTools，因为工具是在服务器端的
-    public initializeTools(tools: Tool[]): void {
-        // 留空
-    }
-
-    /**
-     * @description 将工具执行请求转发给 MCP 客户端
-     */
-    public async execute(toolName: string, toolInput: any): Promise<string> {
-        // 在第一次执行时连接服务器
-        if (!this.mcpClient.isConnected()) {
-            await this.mcpClient.connect(this.mcpServerConfig);
-        } else {
-            console.log("[MCPToolExecutor] 已连接到 MCP 工具服务器。");
-        }
-
-        // MCP 的工具输入需要是键值对，我们需要做一点转换
-        // 例如，askUser 工具的输入是 "question": "..."
-        // 我们需要将 actor 传来的 toolInput (字符串) 包装一下
-        let formattedInput = toolInput;
-        if (typeof toolInput === 'string') {
-            if (toolName === 'askUser') formattedInput = { question: toolInput };
-            if (toolName === 'webSearch') formattedInput = { query: toolInput };
-        }
-
-        return this.mcpClient.callTool(toolName, formattedInput);
-    }
-
-    public async close(): Promise<void> {
-        await this.mcpClient.close();
-    }
+  /**
+   * @description 指挥官会统一关闭所有连接，所以此方法留空或委托
+   */
+  public async close(): Promise<void> {
+    // 可以选择在这里调用 manager.closeAll()，或者由 AimeFramework 在最后统一调用
+  }
 }
