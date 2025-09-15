@@ -131,7 +131,18 @@ export class AimeFramework {
                 );
 
                 const result = await actor.run(nextTask, context);
-                this.progressManager.updateTask(nextTask.id, "completed", result);
+
+                //在这里判断专家返回的结果是成功还是失败
+                if (result.startsWith('FAIL:')) {
+                    // 如果结果以 'FAIL:' 开头，说明任务失败
+                    console.log(`[AimeFramework] 检测到任务 #${nextTask.id} 执行失败。`);
+                    const reason = result.substring(5); // 提取失败原因
+                    this.progressManager.updateTask(nextTask.id, 'failed', reason);
+                } else {
+                    // 否则，任务成功
+                    this.progressManager.updateTask(nextTask.id, 'completed', result);
+                }
+
             }
         }
 

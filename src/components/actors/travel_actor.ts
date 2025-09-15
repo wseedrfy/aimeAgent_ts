@@ -45,14 +45,20 @@ export class TravelActor extends BaseActor {
 
       // 1. 思考 (Reason)
       const thoughtProcess = await this.think(task, context, history);
-      
+
       // 2. 决策与行动 (Act)
       if (thoughtProcess.action === 'final_answer') {
         // 如果 AI 认为可以直接回答了
         console.log(`[TravelActor] AI 决策: 已有足够信息，提供最终答案。`);
         return thoughtProcess.final_answer;
-      } 
-        else if (thoughtProcess.action === 'tool_call' && thoughtProcess.tool_name && thoughtProcess.tool_input) {
+      }
+      // **新增逻辑**: 如果 AI 决定任务失败
+      else if (thoughtProcess.action === 'fail_task') {
+        console.log(`[TravelActor] AI 决策: 任务无法完成。`);
+        // 我们返回一个特殊格式的字符串，以便总指挥识别
+        return `FAIL: ${thoughtProcess.reason || '未知原因'}`;
+      }
+      else if (thoughtProcess.action === 'tool_call' && thoughtProcess.tool_name && thoughtProcess.tool_input) {
         // 如果 AI 决定使用工具
         const toolName = thoughtProcess.tool_name;
         const toolInput = thoughtProcess.tool_input;
@@ -62,16 +68,22 @@ export class TravelActor extends BaseActor {
         // 专家不再自己执行，而是命令“执行器”去执行
         const toolResult = await this.toolExecutor.execute(toolName, toolInput);
 
+        // 如果工具执行本身出错了，也算作任务失败
+        if (toolResult.startsWith("错误：")) {
+          return `FAIL: 工具执行失败 - ${toolResult}`;
+        }
+
+        console.log(`[TravelActor] 工具 [${toolName}] 返回结果: "${toolResult}"`);
         // 将本次的工具使用和结果存入历史记录，用于下一次思考
         history.push({ role: 'assistant', content: JSON.stringify(thoughtProcess) });
         history.push({ role: 'user', content: `工具执行结果: ${toolResult}` }); // 模拟 'user' 角色提供工具结果
       } else {
         console.log("[TravelActor] AI 决策异常，返回当前思考内容。");
-        return `无法做出明确决策，我的最后思考是：${thoughtProcess.thought}`;
+        return `FAIL: AI 无法做出明确决策，最后思考是：${thoughtProcess.thought}`;
       }
     }
 
-    return "执行任务已达到最大循环次数，但仍未得出最终答案。";
+    return "FAIL: 执行任务已达到最大循环次数";
   }
 
   /**
@@ -88,7 +100,7 @@ export class TravelActor extends BaseActor {
       type: 'object',
       properties: {
         thought: { type: 'string', description: "我的思考过程：分析当前情况，决定下一步行动。" },
-        action: { type: 'string', enum: ['tool_call', 'final_answer'], description: "下一步的行动类型。" },
+        action: { type: 'string', enum: ['tool_call', 'final_answer', "fail_task"], description: "下一步的行动类型。" },
         tool_name: { type: 'string', description: "如果行动是 tool_call，这里是工具的名称。写了tool_name后，记得在tool_input中填写工具的输入。" },
         tool_input: { type: 'string', description: "如果行动是 tool_call，这里是给工具的输入。写了tool_input后，记得在tool_name中填写工具的名称。" },
         final_answer: { type: 'string', description: "如果行动是 final_answer，这里一定要写，这里是给用户的最终答案。" }
@@ -97,8 +109,22 @@ export class TravelActor extends BaseActor {
     };
 
     const messages: AIMessage[] = [
-      { role: 'system', content: `${this.persona}\n\n你拥有以下工具可用:\n${toolDescriptions}\n\n你的任务是：根据“项目背景信息”和“历史记录”，完成“当前任务”。请遵循 ReAct 模式，一步一步地思考。在每一步，你都必须决定是“使用工具(tool_call)”来获取更多信息,假如要使用工具，你要让用户输入的信息得少而核心精简而且必须在tool_name中填写工具名称，必须在tool_input中填写工具的输入，还是“提供最终答案(final_answer)”，假如是final_answer，请在final_answer中填写最终答案。请以 JSON 格式返回你的决策。` },
-      { role: 'user', content: `
+      { role: 'system', 
+        content: `${this.persona}
+        你拥有以下工具可用:
+        ${toolDescriptions}
+        
+        **重要指令**: 
+        1.你的任务是：根据“项目背景信息”和“历史记录”，完成“当前任务”。
+        2.请遵循 ReAct 模式，一步一步地思考。
+        3.在每一步，你都必须决定是“使用工具(tool_call)”来获取更多信息,假如要使用工具，你要让用户输入的信息得少而核心精简而且必须在tool_name中填写工具名称，必须在tool_input中填写工具的输入，还是“提供最终答案(final_answer)”，假如是final_answer，请在final_answer中填写最终答案。
+        4.如果你认为已经有足够信息，就使用 'final_answer' 来提供最终答案。
+        5.如果经过思考和尝试后，你判断任务无法完成（例如，信息互相矛盾、工具返回错误、或任务本身不合逻辑），你就必须使用 'fail_task' 来报告失败，并说明原因。
+        请以 JSON 格式返回你的决策。
+        ` 
+      },
+      {
+        role: 'user', content: `
         项目背景信息: ${context}
         ---
         历史记录:
