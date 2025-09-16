@@ -227,7 +227,7 @@ export class BasicAIClient {
 
 // 默认导出创建client的函数
 export function createDefaulAIClient(overrides: AIClientOptions = {}) {
-    const apiKey = process.env.API_KEY || "sk-7lQUxJymZixxcGYfF64v6jxd0P1RlC4jQ2s1tuj5DjAJfquS";
+    const apiKey = process.env.API_KEY;
     let baseURL = process.env.OPENAI_BASE_URL || "https://api.moonshot.cn/v1";
     if (overrides.provider == "openai") {
         baseURL = process.env.OPENAI_BASE_URL || "https://api.moonshot.cn/v1";
