@@ -28,7 +28,7 @@ async function main() {
   // 注册本地工具
   manager.registerLocalTool(new UserInputTool());
 
-  console.log("所有工具描述:", manager.getAllToolDescriptions());
+  console.log("所有工具描述:", await manager.getAllToolDescriptions());
 
   // 1) math.calculate
   const calc = await manager.executeTool("askUser", "请告诉我1+1等于多少");

@@ -11,7 +11,7 @@ import { UnifiedToolManager } from '../tools/unified_tool_manager';
  */
 export class TravelActor extends BaseActor {
   private toolManager: UnifiedToolManager;
-  private toolDescriptions: string;   // 缓存工具描述
+  private toolDescriptions?: string;   // 可选缓存工具描述
 
   /**
    * @description 构造函数，为专家配备工具
@@ -23,7 +23,6 @@ export class TravelActor extends BaseActor {
   constructor(persona: string, aiClient: BasicAIClient, toolManager: UnifiedToolManager, allTools: Tool[]) {
     super(persona, aiClient); // 调用父类的构造函数
     this.toolManager = toolManager;
-    this.toolDescriptions = this.toolManager.getAllToolDescriptions();
     console.log(`[TravelActor] 专家已就位，并接入了“统一工具总线”。`);
   }
 
@@ -94,7 +93,7 @@ export class TravelActor extends BaseActor {
    * @returns {Promise<any>} - AI 返回的结构化决策（JSON格式）
    */
   private async think(task: Task, context: string, history: AIMessage[]): Promise<any> {
-    const toolDescriptions = this.toolDescriptions;
+    const toolDescriptions = this.toolDescriptions ?? await this.toolManager.getAllToolDescriptions();
 
     const responseSchema = {
       type: 'object',
