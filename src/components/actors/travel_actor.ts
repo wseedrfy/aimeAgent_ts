@@ -3,13 +3,14 @@ import { Task } from '../progress_manager';
 import { AIMessage, BasicAIClient } from '../../core/ai_sdk';
 import { Tool } from '../tools/base_tool'; // 引入 Tool 接口
 import { ToolExecutor } from '../tools/tool_executor'; // 引入新的执行器接口
+import { UnifiedToolManager } from '../tools/unified_tool_manager';
 
 /**
  * 旅行专家 ✈️ (工具增强版)
  * 一个配备了工具箱，并能通过 ReAct 模式执行复杂任务的专家。
  */
 export class TravelActor extends BaseActor {
-  private toolExecutor: ToolExecutor; // 一个执行器
+  private toolManager: UnifiedToolManager;
   private toolDescriptions: string;   // 缓存工具描述
 
   /**
@@ -19,12 +20,11 @@ export class TravelActor extends BaseActor {
    * @param toolExecutor - 工具执行器,本地工具或者是mcp工具
    * @param allTools - 所有工具
    */
-  constructor(persona: string, aiClient: BasicAIClient, toolExecutor: ToolExecutor, allTools: Tool[]) {
+  constructor(persona: string, aiClient: BasicAIClient, toolManager: UnifiedToolManager, allTools: Tool[]) {
     super(persona, aiClient); // 调用父类的构造函数
-    this.toolExecutor = toolExecutor;
-    this.toolExecutor.initializeTools(allTools); // 初始化执行器
-    this.toolDescriptions = allTools.map(tool => `- ${tool.name}: ${tool.description}`).join('\n');
-    console.log(`[TravelActor] 专家已就位，当前工具执行策略: ${toolExecutor.constructor.name}`);
+    this.toolManager = toolManager;
+    this.toolDescriptions = this.toolManager.getAllToolDescriptions();
+    console.log(`[TravelActor] 专家已就位，并接入了“统一工具总线”。`);
   }
 
   /**
@@ -65,8 +65,8 @@ export class TravelActor extends BaseActor {
         console.log(`[TravelActor] AI 决策: 使用工具 [${toolName}]，输入为: "${toolInput}"`);
 
         // 3. 观察 (Observe) - 执行工具并获取结果
-        // 专家不再自己执行，而是命令“执行器”去执行
-        const toolResult = await this.toolExecutor.execute(toolName, toolInput);
+        // 专家只需调用“统一总管”，无需关心工具来源
+        const toolResult = await this.toolManager.executeTool(toolName, toolInput);
 
         // 如果工具执行本身出错了，也算作任务失败
         if (toolResult.startsWith("错误：")) {
@@ -109,7 +109,8 @@ export class TravelActor extends BaseActor {
     };
 
     const messages: AIMessage[] = [
-      { role: 'system', 
+      {
+        role: 'system',
         content: `${this.persona}
         你拥有以下工具可用:
         ${toolDescriptions}
@@ -121,7 +122,7 @@ export class TravelActor extends BaseActor {
         4.如果你认为已经有足够信息，就使用 'final_answer' 来提供最终答案。
         5.如果经过思考和尝试后，你判断任务无法完成（例如，信息互相矛盾、工具返回错误、或任务本身不合逻辑），你就必须使用 'fail_task' 来报告失败，并说明原因。
         请以 JSON 格式返回你的决策。
-        ` 
+        `
       },
       {
         role: 'user', content: `

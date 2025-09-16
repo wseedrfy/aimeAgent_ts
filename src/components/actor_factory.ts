@@ -6,6 +6,7 @@ import { BasicAIClient, createDefaulAIClient, AIMessage } from "../core/ai_sdk";
 import { UserInputTool } from "./tools/user_input_tool";
 import { MemoryModule } from "./memory_module";
 import { ToolExecutor } from "./tools/tool_executor";
+import { UnifiedToolManager } from "./tools/unified_tool_manager";
 
 /**
  * 演员工厂 🏭 (升级版)
@@ -14,15 +15,14 @@ import { ToolExecutor } from "./tools/tool_executor";
 export class ActorFactory {
   private aiClient: BasicAIClient;
   private memory: MemoryModule;
-  private toolExecutor: ToolExecutor; // 新增一个属性来保存执行器
+  private toolManager: UnifiedToolManager; // **修改点**
   /**
    * @description 构造函数，初始化工厂
    */
-  constructor(memory: MemoryModule, toolExecutor: ToolExecutor) {
+  constructor(memory: MemoryModule, toolManager: UnifiedToolManager) {
     this.aiClient = createDefaulAIClient();
     this.memory = memory;
-    this.toolExecutor = toolExecutor; // 保存执行器
-    console.log("[ActorFactory] 人才市场已开张 (工厂已初始化)。");
+    this.toolManager = toolManager; // 保存工具管理器
   }
 
   /**
@@ -59,7 +59,7 @@ export class ActorFactory {
         "[ActorFactory] 任务与旅行相关，正在创建 [TravelActor] 专家..."
       );
       const userInputTool = new UserInputTool();
-      return new TravelActor(persona, this.aiClient, this.toolExecutor, [
+      return new TravelActor(persona, this.aiClient, this.toolManager, [
         userInputTool,
       ]);
     } else {

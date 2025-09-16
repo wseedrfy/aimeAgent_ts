@@ -9,21 +9,22 @@ async function testMultiMCPStrategy() {
 
   // 1. 定义我们的“服务器舰队”配置
   const mcpConfig: MultiMCPServerConfig = {
-    // 我们只启动一个我们自己写的服务器作为示例
-    "my_tool_server": {
-      command: "npx",
-      args: ["tsx", "src/tool_server.ts"]
-    }
-    // 未来您可以按格式在这里添加更多服务器，比如：
-    // "memory_server": {
-    //   command: "npx",
-    //   args: ["-y", "@modelcontextprotocol/server-memory"]
-    // }
+    "test_server": {
+        command: "npx",
+        args: ["tsx", "src/mcp/test_server.ts"]
+      },
+      "math": {
+        "command": "npx",
+        "args": ["tsx", "src/mcp/math_server.ts"]
+      },
+      "hangzhou-weather": {
+        "command": "npx",
+        "args": ["tsx", "src/mcp/hangzhou_weather.ts"]
+      }
   };
 
   // 2. 创建 AimeFramework 的总配置
   const frameworkConfig: AimeFrameworkConfig = {
-    strategy: 'mcp',
     mcpConfig: mcpConfig
   };
 

@@ -8,10 +8,11 @@ import { MCPToolExecutor } from "./components/tools/mcp_tool_executor";
 import { MemoryModule } from "./components/memory_module";
 import { MCPServerConfig } from "./components/tools/mcp_client";
 import { MultiMCPManager, MultiMCPServerConfig } from "./components/tools/multi_mcp_manager";
+import { UnifiedToolManager } from "./components/tools/unified_tool_manager";
+import { UserInputTool } from "./components/tools/user_input_tool";
 
 // 新增一个配置类型
 export interface AimeFrameworkConfig {
-    strategy: ToolExecutionStrategy;
     mcpConfig?: MultiMCPServerConfig; // 如果是 mcp 策略，则需要这个配置
 }
 
@@ -28,7 +29,7 @@ export class AimeFramework {
     private aiClient: BasicAIClient;
     private maxTurns: number = 51;
     private memory: MemoryModule;
-    private toolExecutor: ToolExecutor;
+    private toolManager: UnifiedToolManager; // 使用统一工具管理器
     private multiMCPManager?: MultiMCPManager; // MCP 管理器是可选的
     /**
      * @description 构造函数，初始化所有核心组件
@@ -39,21 +40,12 @@ export class AimeFramework {
         // this.actorFactory = new ActorFactory();
         this.aiClient = createDefaulAIClient();
         this.memory = new MemoryModule();
-        if (this.config.strategy === "mcp") {
-            // 使用 MCP 执行器
-            if (!this.config.mcpConfig) {
-                throw new Error("错误：选择 'mcp' 策略时，必须提供 mcpConfig。");
-            }
-            // 如果是 MCP 策略，则创建并初始化“舰队指挥官”
-            this.multiMCPManager = new MultiMCPManager();
-            this.toolExecutor = new MCPToolExecutor(this.multiMCPManager);
-        } else {
-            // 默认使用本地执行器
-            this.toolExecutor = new LocalToolExecutor();
-        }
+        this.toolManager = new UnifiedToolManager(); // 创建“统一总管”
 
-        // 将选定的执行器传给工厂
-        this.actorFactory = new ActorFactory(this.memory, this.toolExecutor);
+        //将“统一总管”传给工厂
+        this.actorFactory = new ActorFactory(this.memory, this.toolManager);
+        console.log("[AimeFramework] 总指挥已启动 (统一工具总线版)。");
+
         console.log("[AimeFramework] 总指挥已启动，所有组件准备就绪。");
     }
 
@@ -65,10 +57,8 @@ export class AimeFramework {
         // ... 这部分代码和上一版完全相同，无需改动 ...
         console.log(`[AimeFramework] 接收到新目标: "${goal}"，开始运行...`);
 
-        // 如果是 MCP 策略，在运行开始时，启动所有服务器
-        if (this.config.strategy === 'mcp' && this.multiMCPManager && this.config.mcpConfig) {
-            await this.multiMCPManager.initialize(this.config.mcpConfig);
-        }
+        // 在运行开始时，初始化“统一总管”
+        await this.initializeTools();
 
         // run 方法的主循环逻辑
         this.progressManager.initializePlan(goal);
@@ -160,17 +150,15 @@ export class AimeFramework {
             }
         }
 
-        // 在运行结束后，关闭所有服务器连接
-        if (this.multiMCPManager) {
-            await this.multiMCPManager.closeAll();
-        }
-
         if (turn >= this.maxTurns)
             console.log("[AimeFramework] 已达到最大回合数，停止运行。");
         console.log("\n\n========= 最终任务成果 =========");
         this.progressManager.printProgress();
 
-        // **新增的最后一步：生成最终的整合报告**
+        // 在运行结束后，关闭所有连接
+        await this.toolManager.closeAllConnections();
+
+        // 生成最终的整合报告
         await this.synthesizeResults(goal);
     }
 
@@ -310,5 +298,27 @@ export class AimeFramework {
         } catch (error) {
             console.error("[AimeFramework] 生成最终报告失败:", error);
         }
+    }
+
+    /**
+     * @description (新) 初始化工具管理器，注册所有本地和远程工具
+     */
+    private async initializeTools(): Promise<void> {
+        // 1. 注册所有本地工具
+        this.toolManager.registerLocalTool(new UserInputTool());
+        // (未来还可以注册更多本地工具...)
+
+        // 2. 如果有 MCP 配置，则注册所有远程服务器
+        if (this.config.mcpConfig) {
+            await this.toolManager.registerMCPServers(this.config.mcpConfig);
+        }
+    }
+
+    // **重要**: 我们需要稍微修改一下 buildFullContext 来从 toolManager 获取信息
+    private buildFullContext(task: Task) {
+        // ...
+        // 这个函数现在可以变得更简单，因为它只需要从 progressManager 和 memory 中获取信息
+        // Actor 会从 toolManager 自己获取工具列表
+        // ...
     }
 }

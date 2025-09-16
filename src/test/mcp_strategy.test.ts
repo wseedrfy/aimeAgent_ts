@@ -12,11 +12,19 @@ async function testMCPStrategy() {
     "test_server": {
       command: "npx",
       args: ["tsx", "src/mcp/test_server.ts"]
+    },
+    "math": {
+      "command": "node",
+      "args": ["/Users/lsj/Desktop/codeProject/多智能体学习/agent-squad/lsj-teach-aime-agent/node_modules/ts-node/dist/bin.js", "--esm", "/Users/lsj/Desktop/codeProject/多智能体学习/agent-squad/lsj-teach-aime-agent/src/mcp/math_server.ts"]
+    },
+    "hangzhou-weather": {
+      "command": "node",
+      "args": ["/Users/lsj/Desktop/codeProject/多智能体学习/agent-squad/lsj-teach-aime-agent/node_modules/ts-node/dist/bin.js", "--esm", "/Users/lsj/Desktop/codeProject/多智能体学习/agent-squad/lsj-teach-aime-agent/src/mcp/hangzhou_weather.ts"]
     }
   };
 
   // 2. 创建 AimeFramework 实例，明确指定使用 'mcp' 策略，并传入配置
-  const framework = new AimeFramework({ strategy: 'mcp', mcpConfig: myToolServerConfig });
+  const framework = new AimeFramework({ mcpConfig: myToolServerConfig });
 
   const userGoal = "为我的北海道滑雪之旅，获取一个合适的预算建议。";
 
