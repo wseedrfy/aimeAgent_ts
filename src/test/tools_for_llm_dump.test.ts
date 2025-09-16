@@ -1,4 +1,4 @@
-import { UnifiedToolManager, MultiMCPServerConfig } from "../components/tools/unified_tool_manager";
+import { UnifiedToolManager, MultiMCPServerConfig } from "../components/tools/executor/unified_tool_manager";
 
 async function main() {
   console.log("--- Dump LLM Tools (包含远程工具的 JSON Schema) ---");

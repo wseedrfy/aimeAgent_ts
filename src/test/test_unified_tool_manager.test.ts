@@ -1,4 +1,4 @@
-import { MultiMCPServerConfig, UnifiedToolManager } from "../components/tools/unified_tool_manager";
+import { MultiMCPServerConfig, UnifiedToolManager } from "../components/tools/executor/unified_tool_manager";
 import { MCPServerConfig } from "../components/tools/mcp_client";
 import { UserInputTool } from "../components/tools/user_input_tool";
 

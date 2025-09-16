@@ -1,4 +1,4 @@
-import { MultiMCPManager, MultiMCPServerConfig } from "../components/tools/multi_mcp_manager";
+import { MultiMCPManager, MultiMCPServerConfig } from "../components/tools/executor/multi_mcp_manager";
 
 async function main() {
   console.log("--- 使用 MultiMCPManager 测试多 MCP 服务器 ---");

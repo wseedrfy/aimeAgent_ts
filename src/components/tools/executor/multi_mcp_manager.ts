@@ -1,4 +1,6 @@
-import { MCPClient, MCPServerConfig } from './mcp_client';
+import { MCPClient, MCPServerConfig } from '../mcp_client';
+
+// 没用
 
 /**
  * @description 定义多 MCP 服务器的 JSON 配置格式

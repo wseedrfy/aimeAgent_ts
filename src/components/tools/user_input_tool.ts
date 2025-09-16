@@ -1,4 +1,4 @@
-import { Tool } from './base_tool';
+import { Tool } from './type/base_tool';
 import * as readline from 'readline/promises'; // 引入 Node.js 的原生交互模块
 
 /**

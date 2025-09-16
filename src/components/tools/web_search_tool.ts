@@ -1,4 +1,4 @@
-import { Tool } from './base_tool';
+import { Tool } from './type/base_tool';
 
 /**
  * 网络搜索工具 🌐

@@ -1,4 +1,4 @@
-import { Tool } from './base_tool';
+import { Tool } from './type/base_tool';
 import { MemoryModule } from '../memory_module';
 
 /**

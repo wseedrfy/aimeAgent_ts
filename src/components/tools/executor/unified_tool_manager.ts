@@ -1,5 +1,5 @@
-import { Tool } from "./base_tool";
-import { MCPClient, MCPServerConfig } from "./mcp_client";
+import { Tool } from "../type/base_tool";
+import { MCPClient, MCPServerConfig } from "../mcp_client";
 
 // 定义工具的来源类型
 type ToolSource =

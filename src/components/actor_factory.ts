@@ -5,8 +5,7 @@ import { BaseActor, Actor } from "./actors/base_actor";
 import { BasicAIClient, createDefaulAIClient, AIMessage } from "../core/ai_sdk";
 import { UserInputTool } from "./tools/user_input_tool";
 import { MemoryModule } from "./memory_module";
-import { ToolExecutor } from "./tools/tool_executor";
-import { UnifiedToolManager } from "./tools/unified_tool_manager";
+import { UnifiedToolManager } from "./tools/executor/unified_tool_manager";
 
 /**
  * 演员工厂 🏭 (升级版)

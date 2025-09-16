@@ -1,5 +1,5 @@
-import { Tool } from "./base_tool";
-import { ToolExecutor } from "./tool_executor";
+import { Tool } from "../type/base_tool";
+import { ToolExecutor } from "../type/tool_executor";
 
 /**
  * 本地工具执行器 🏠

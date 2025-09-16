@@ -1,6 +1,8 @@
-import { Tool } from "./base_tool";
-import { ToolExecutor } from "./tool_executor";
+import { Tool } from "../type/base_tool";
+import { ToolExecutor } from "../type/tool_executor";
 import { MultiMCPManager } from "./multi_mcp_manager"; // 引入“舰队指挥官”
+
+// 没用
 
 /**
  * MCP 工具执行器 📡 (指挥官版)

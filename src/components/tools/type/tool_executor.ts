@@ -1,5 +1,7 @@
 import { Tool } from "./base_tool";
 
+// 没用
+
 /**
  * @description 工具执行器接口 (Tool Executor Interface)
  * 定义了所有工具执行策略都必须遵守的规范。

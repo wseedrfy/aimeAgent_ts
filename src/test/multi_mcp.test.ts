@@ -1,5 +1,5 @@
 import { AimeFramework, AimeFrameworkConfig } from '../aime_framework';
-import { MultiMCPServerConfig } from '../components/tools/multi_mcp_manager';
+import { MultiMCPServerConfig } from '../components/tools/executor/multi_mcp_manager';
 
 /**
  * @description 端到端测试：测试 AimeFramework 的多 MCP 策略

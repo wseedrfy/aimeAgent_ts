@@ -2,13 +2,8 @@ import { ProgressManager, Task } from "./components/progress_manager";
 import { DynamicPlanner } from "./components/dynamic_planner";
 import { ActorFactory } from "./components/actor_factory";
 import { BasicAIClient, createDefaulAIClient, AIMessage } from "./core/ai_sdk";
-import { ToolExecutor } from "./components/tools/tool_executor";
-import { LocalToolExecutor } from "./components/tools/local_tool_executor";
-import { MCPToolExecutor } from "./components/tools/mcp_tool_executor";
 import { MemoryModule } from "./components/memory_module";
-import { MCPServerConfig } from "./components/tools/mcp_client";
-import { MultiMCPManager, MultiMCPServerConfig } from "./components/tools/multi_mcp_manager";
-import { UnifiedToolManager } from "./components/tools/unified_tool_manager";
+import { UnifiedToolManager, MultiMCPServerConfig } from "./components/tools/executor/unified_tool_manager";
 import { UserInputTool } from "./components/tools/user_input_tool";
 
 // 新增一个配置类型
@@ -30,7 +25,6 @@ export class AimeFramework {
     private maxTurns: number = 51;
     private memory: MemoryModule;
     private toolManager: UnifiedToolManager; // 使用统一工具管理器
-    private multiMCPManager?: MultiMCPManager; // MCP 管理器是可选的
     /**
      * @description 构造函数，初始化所有核心组件
      */

@@ -1,9 +1,8 @@
 import { BaseActor } from './base_actor';
 import { Task } from '../progress_manager';
 import { AIMessage, BasicAIClient } from '../../core/ai_sdk';
-import { Tool } from '../tools/base_tool'; // 引入 Tool 接口
-import { ToolExecutor } from '../tools/tool_executor'; // 引入新的执行器接口
-import { UnifiedToolManager } from '../tools/unified_tool_manager';
+import { Tool } from '../tools/type/base_tool'; // 引入 Tool 接口
+import { UnifiedToolManager } from '../tools/executor/unified_tool_manager';
 
 /**
  * 旅行专家 ✈️ (工具增强版)
