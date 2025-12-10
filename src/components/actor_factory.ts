@@ -3,7 +3,6 @@ import { TravelActor } from "./actors/travel_actor";
 import { Task } from "./progress_manager";
 import { BaseActor, Actor } from "./actors/base_actor";
 import { BasicAIClient, createDefaulAIClient, AIMessage } from "../core/ai_sdk";
-import { UserInputTool } from "./tools/user_input_tool";
 import { MemoryModule } from "./memory_module";
 import { UnifiedToolManager } from "./tools/executor/unified_tool_manager";
 
@@ -57,10 +56,7 @@ export class ActorFactory {
       console.log(
         "[ActorFactory] 任务与旅行相关，正在创建 [TravelActor] 专家..."
       );
-      const userInputTool = new UserInputTool();
-      return new TravelActor(persona, this.aiClient, this.toolManager, [
-        userInputTool,
-      ]);
+      return new TravelActor(persona, this.aiClient, this.toolManager);
     } else {
       console.log(
         "[ActorFactory] 未匹配到特定领域，正在创建通用 [BaseActor] 专家..."

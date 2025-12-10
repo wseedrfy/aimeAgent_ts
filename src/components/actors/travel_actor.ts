@@ -1,8 +1,9 @@
 import { BaseActor } from './base_actor';
 import { Task } from '../progress_manager';
 import { AIMessage, BasicAIClient } from '../../core/ai_sdk';
-import { Tool } from '../tools/type/base_tool'; // 引入 Tool 接口
+import { Tool } from '../tools/type/base_tool';
 import { UnifiedToolManager } from '../tools/executor/unified_tool_manager';
+import { UserInputTool } from '../tools/user_input_tool';
 
 /**
  * 旅行专家 ✈️ (工具增强版)
@@ -10,19 +11,48 @@ import { UnifiedToolManager } from '../tools/executor/unified_tool_manager';
  */
 export class TravelActor extends BaseActor {
   private toolManager: UnifiedToolManager;
+  private myTools: Tool[] = [];  // 专家的专属工具列表
   private toolDescriptions?: string;   // 可选缓存工具描述
 
   /**
    * @description 构造函数，为专家配备工具
    * @param persona - 专家的个性
    * @param aiClient - 智能体
-   * @param toolExecutor - 工具执行器,本地工具或者是mcp工具
-   * @param allTools - 所有工具
+   * @param toolManager - 工具管理器（用于执行工具）
    */
-  constructor(persona: string, aiClient: BasicAIClient, toolManager: UnifiedToolManager, allTools: Tool[]) {
+  constructor(persona: string, aiClient: BasicAIClient, toolManager: UnifiedToolManager) {
     super(persona, aiClient); // 调用父类的构造函数
     this.toolManager = toolManager;
-    console.log(`[TravelActor] 专家已就位，并接入了“统一工具总线”。`);
+    
+    // 注册这个专家的专属工具
+    this.registerTools();
+    
+    console.log(`[TravelActor] 专家已就位，已配备 ${this.myTools.length} 个专属工具。`);
+  }
+
+  /**
+   * @description 注册该专家的专属工具
+   */
+  private registerTools(): void {
+    // 旅行专家需要的工具
+    const userInputTool = new UserInputTool();
+    
+    // 添加到专家自己的工具列表
+    this.myTools.push(userInputTool);
+    
+    // 同时注册到全局工具管理器（用于实际执行）
+    this.toolManager.registerLocalTool(userInputTool);
+    
+    console.log(`[TravelActor] 已注册专属工具: ${this.myTools.map(t => t.name).join(', ')}`);
+  }
+
+  /**
+   * @description 获取该专家自己的工具描述列表
+   */
+  private getMyToolDescriptions(): string {
+    return this.myTools
+      .map(tool => `- ${tool.name}: ${tool.description}`)
+      .join('\n');
   }
 
   /**
@@ -92,7 +122,8 @@ export class TravelActor extends BaseActor {
    * @returns {Promise<any>} - AI 返回的结构化决策（JSON格式）
    */
   private async think(task: Task, context: string, history: AIMessage[]): Promise<any> {
-    const toolDescriptions = this.toolDescriptions ?? await this.toolManager.getAllToolDescriptions();
+    // 获取这个专家自己的工具描述（不是全局的）
+    const toolDescriptions = this.toolDescriptions ?? this.getMyToolDescriptions();
 
     const responseSchema = {
       type: 'object',
